@@ -57,7 +57,7 @@ if generate_btn:
             except Exception as e:
                 st.error(f"❌ 呼叫 AI 時發生錯誤：{e}")
 else:
-    st.info("👈 請在左側輸入旅遊條件，點擊按鈕即可讓 AI 即時幫你寫行程！")import streamlit as st
+    st.info("👈 請在左側輸入旅遊條件，點擊按鈕即可讓 AI 即時幫你寫行程！")
 from google import genai
 import os
 
