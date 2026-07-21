@@ -66,7 +66,6 @@ if generate_btn:
             try:
                 client = genai.Client(api_key=api_key)
                 
-                # 嚴格對齊所有最新功能需求的 Prompt
                 prompt = f"""
                 你是一個專業的 AI 智慧旅遊推薦系統與高階行程規劃師。請針對以下使用者輸入的獨特條件，進行即時的動態分析與思考運算。
                 【絕對警告】：請勿使用任何預先寫死或固定的罐頭景點與模板！所有內容都必須100%根據本次輸入現場動態生成。
@@ -81,10 +80,9 @@ if generate_btn:
                 - 旅遊偏好：{', '.join(preferences) if preferences else '無特別指定'}
                 - 需要雨天備案：{rain_backup}
 
-                請以繁體中文回答，並嚴格按照以下結構與章節標題輸出：
+                請以繁體中文回答，並嚴格按照以下章節標題輸出（請確保標題完全一致）：
 
                 ### ① AI Decision Log
-                請以步驟流程圖形式展示決策過程：
                 收到使用者需求
                 ↓
                 分析需求
@@ -106,7 +104,6 @@ if generate_btn:
                 生成最終行程
 
                 ### ② AI候選景點篩選流程
-                請以流程圖形式呈現篩選過程：
                 AI搜尋景點
                 ↓
                 共搜尋到 [動態數字] 個景點
@@ -125,24 +122,15 @@ if generate_btn:
                 - 旅遊限制與特色：
                 - 各項指標權重說明（推薦度、交通、CP值、拍照、美食、雨天適合度）：
 
-                ### ④ AI景點評分（含詳細依據）
-                - 請現場動態列出被保留的候選景點，並針對每個景點提供包含以下格式的詳細評分與簡短理由（不可只給數字，每一項都要有原因）：
+                ### ④ AI景點評分
+                - 請現場動態列出被保留的候選景點，並針對每個景點提供包含以下格式的詳細評分與簡短理由：
                   景點名稱：[景點]
                   - 交通：[分數]
-                    原因：
-                    - [理由1]
-                    - [理由2]
-                    - [理由3]
+                    原因：[理由簡述]
                   - 拍照：[分數]
-                    原因：
-                    - [理由1]
-                    - [理由2]
-                    - [理由3]
+                    原因：[理由簡述]
                   - CP值：[分數]
-                    原因：
-                    - [理由1]
-                    - [理由2]
-                    - [理由3]
+                    原因：[理由簡述]
                   - 綜合分數：[分數]
 
                 ### ⑤ AI淘汰原因
@@ -160,12 +148,8 @@ if generate_btn:
                 ### ⑨ AI可信度摘要
                 - AI可信度：[動態百分比]%
                 - 原因：
-                  ✓ [正面條件1]
-                  ✓ [正面條件2]
-                  ✓ [正面條件3]
-                  ✓ [正面條件4]
-                  ⚠ [風險或變數1]
-                  ⚠ [風險或變數2]
+                  ✓ [正面條件]
+                  ⚠ [風險變數]
                 """
                 
                 response = client.models.generate_content(
@@ -181,7 +165,7 @@ if generate_btn:
                 status_box.update(label="❌ 運算發生錯誤", state="error", expanded=True)
                 st.error(f"❌ 呼叫 AI 時發生錯誤：{e}")
 
-# ==================== 5. 呈現介面 (Tabs + Metrics + Expanders) ====================
+# ==================== 5. 呈現介面 (Tabs + 切割顯示) ====================
 if st.session_state.get("generated", False):
     
     col1, col2, col3, col4 = st.columns(4)
@@ -200,20 +184,48 @@ if st.session_state.get("generated", False):
     
     full_text = st.session_state["ai_response"]
     
+    # 簡易字串切割函數，用來把不同章節對應到各自的 Tab 裡
+    def extract_section(text, start_marker, end_marker):
+        try:
+            start = text.index(start_marker)
+            if end_marker:
+                end = text.index(end_marker)
+                return text[start:end]
+            return text[start:]
+        except:
+            return ""
+
+    # 各分頁精準對位呈現
     with tab_itinerary:
         st.subheader(f"✨ 「{destination}」動態生成專屬智慧行程")
-        st.markdown(full_text)
+        itinerary_part = extract_section(full_text, "### ⑦ 每日詳細行程", "### ⑧ 雨天備案")
+        backup_part = extract_section(full_text, "### ⑧ 雨天備案", "### ⑨ AI可信度摘要")
+        st.markdown(itinerary_part)
+        st.markdown(backup_part)
 
     with tab_analysis:
         st.subheader("📊 篩選流程、多維度權重與評分依據模型")
-        with st.expander("🔍 點擊展開：② 候選景點篩選流程與 ④ 景點評分詳細依據", expanded=True):
-            st.info("系統現場動態計算各景點之交通、拍照、CP值評分與詳細理由：")
-            st.markdown(full_text)
+        
+        with st.expander("🔍 點擊展開：② 候選景點篩選流程", expanded=True):
+            st.markdown(extract_section(full_text, "### ② AI候選景點篩選流程", "### ③ AI需求與權重分析"))
+            
+        with st.expander("📈 點擊展開：③ AI 需求與權重分析", expanded=False):
+            st.markdown(extract_section(full_text, "### ③ AI需求與權重分析", "### ④ AI景點評分"))
+            
+        with st.expander("⭐ 點擊展開：④ AI 景點評分（含詳細依據）", expanded=False):
+            st.markdown(extract_section(full_text, "### ④ AI景點評分", "### ⑤ AI淘汰原因"))
 
     with tab_decision:
         st.subheader("⚙️ 決策中樞：AI Decision Log 與可信度驗證")
-        with st.expander("📈 點擊展開：① AI Decision Log 與 ⑨ 可信度評估摘要", expanded=True):
-            st.markdown(full_text)
+        
+        with st.expander("🧭 點擊展開：① AI Decision Log（決策透明度）", expanded=True):
+            st.markdown(extract_section(full_text, "### ① AI Decision Log", "### ② AI候選景點篩選流程"))
+            
+        with st.expander("🗑️ 點擊展開：⑤ AI 淘汰原因與 ⑥ 動線最佳化", expanded=False):
+            st.markdown(extract_section(full_text, "### ⑤ AI淘汰原因", "### ⑦ 每日詳細行程"))
+            
+        with st.expander("🎯 點擊展開：⑨ AI 可信度評估摘要", expanded=False):
+            st.markdown(extract_section(full_text, "### ⑨ AI可信度摘要", None))
 
 else:
-    st.info("👈 請在左側輸入您想去的目的地與進階偏好，並點擊 **「🚀 啟動 AI 智慧推薦與排程引擎」**，讓系統即時為您現場運算具備透明決策日誌的推薦報告！")
+    st.info("👈 請在左側輸入您想去的目的地與進階偏好，並點擊 **`🚀 啟動 AI 智慧推薦與排程引擎`**，讓系統即時為您現場運算具備透明決策日誌的推薦報告！")
