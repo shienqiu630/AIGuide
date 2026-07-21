@@ -1,0 +1,10 @@
+# Python 相關
+.venv/
+__pycache__/
+*.pyc
+
+# Mac 系統自動產生的垃圾檔
+.DS_Store
+
+# Streamlit 本機機密設定檔（千萬不要推上去！）
+.streamlit/
