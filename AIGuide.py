@@ -1,6 +1,7 @@
 import streamlit as st
 from google import genai
 import os
+import time
 
 # ==================== 1. 頁面基本設定 ====================
 st.set_page_config(
@@ -15,7 +16,7 @@ api_key = st.secrets.get("GEMINI_API_KEY") or os.getenv("GEMINI_API_KEY")
 # ==================== 2. 側邊欄：進階推薦系統輸入區 ====================
 st.sidebar.header("🎯 AI 智慧推薦系統設定")
 
-destination = st.sidebar.text_input("🌍 目的地", placeholder="請輸入想去的國家或城市，例如：東京、巴黎")
+destination = st.sidebar.text_input("🌍 目的地", placeholder="請輸入想去的國家或城市，例如：京都、巴黎")
 days = st.sidebar.slider("📅 旅遊天數", min_value=1, max_value=7, value=3)
 people = st.sidebar.number_input("👥 旅伴人數", min_value=1, max_value=20, value=2)
 budget = st.sidebar.number_input("💰 總預算 (TWD)", min_value=1000, max_value=200000, value=30000, step=1000)
@@ -41,7 +42,7 @@ generate_btn = st.sidebar.button("🚀 啟動 AI 智慧推薦與排程引擎", t
 
 # ==================== 3. 主畫面標題與狀態 ====================
 st.title("🗺️ 「AI 玩樂指南」：動態 AI 智慧旅遊推薦系統")
-st.markdown("##### 💡 結合多維度權重分析、候選景點評分與動線最佳化的新一代 AI 旅遊決策中樞")
+st.markdown("##### 💡 結合多維度權重分析、動態候選景點評分與決策透明化的新一代 AI 旅遊決策中樞")
 st.markdown("---")
 
 # ==================== 4. 核心 AI 邏輯與區塊 ====================
@@ -51,13 +52,24 @@ if generate_btn:
     elif not api_key:
         st.error("⚠️ 尚未設定 API Key！請至 Streamlit Cloud 後台 Settings -> Secrets 中設定 GEMINI_API_KEY。")
     else:
-        with st.spinner(f"🤖 AI 推薦引擎正在運算 {destination} 的最佳旅遊決策模型（分析需求、權重、景點評分與動線）..."):
+        status_box = st.status("🧠 AI 智慧推薦中樞啟動中...", expanded=True)
+        
+        with status_box:
+            st.write(f"🌐 正在解析目的地：【{destination}】之地理與旅遊特徵...")
+            time.sleep(0.4)
+            st.write(f"⚖️ 正在根據「{travel_type}」與偏好動態計算權重模型...")
+            time.sleep(0.4)
+            st.write("🔍 正在執行候選景點搜尋與多輪過濾篩選...")
+            time.sleep(0.4)
+            st.write("📊 正在執行評分依據建立、決策日誌與動線最佳化運算...")
+            
             try:
                 client = genai.Client(api_key=api_key)
                 
-                # 組裝嚴謹的結構化 Prompt
+                # 嚴格對齊所有最新功能需求的 Prompt
                 prompt = f"""
-                你是一個專業的 AI 智慧旅遊推薦系統與高階行程規劃師。請根據以下使用者參數，進行深度思考與系統化分析，並嚴格按照指定的 8 個步驟格式輸出報告：
+                你是一個專業的 AI 智慧旅遊推薦系統與高階行程規劃師。請針對以下使用者輸入的獨特條件，進行即時的動態分析與思考運算。
+                【絕對警告】：請勿使用任何預先寫死或固定的罐頭景點與模板！所有內容都必須100%根據本次輸入現場動態生成。
 
                 [使用者輸入參數]
                 - 目的地：{destination}
@@ -69,46 +81,91 @@ if generate_btn:
                 - 旅遊偏好：{', '.join(preferences) if preferences else '無特別指定'}
                 - 需要雨天備案：{rain_backup}
 
-                請以繁體中文回答，並使用以下標題與結構輸出：
+                請以繁體中文回答，並嚴格按照以下結構與章節標題輸出：
 
-                ### ① AI需求分析
-                - 分析旅遊限制：
-                - 旅遊特色：
-                - 適合玩法：
+                ### ① AI Decision Log
+                請以步驟流程圖形式展示決策過程：
+                收到使用者需求
+                ↓
+                分析需求
+                ↓
+                建立候選景點
+                ↓
+                完成第一輪評分
+                ↓
+                淘汰交通不佳景點
+                ↓
+                重新排序
+                ↓
+                最佳化住宿位置
+                ↓
+                檢查預算
+                ↓
+                驗證交通
+                ↓
+                生成最終行程
 
-                ### ② AI權重分析
-                - 依照上述需求，說明系統如何動態調整以下指標的權重（給予原因）：
-                  - 推薦度
-                  - 交通
-                  - CP值
-                  - 拍照
-                  - 美食
-                  - 雨天適合度
+                ### ② AI候選景點篩選流程
+                請以流程圖形式呈現篩選過程：
+                AI搜尋景點
+                ↓
+                共搜尋到 [動態數字] 個景點
+                ↓
+                第一輪篩選
+                ↓
+                依交通淘汰
+                ↓
+                依預算淘汰
+                ↓
+                依旅遊偏好淘汰
+                ↓
+                留下 [動態數字] 個候選景點
 
-                ### ③ AI景點評分
-                - 請先列出 6~10 個候選景點，並必須使用 Markdown 表格呈現，欄位包含：| 景點 | 推薦度 | 交通 | CP值 | 拍照 | 美食 | 綜合分數 |，並依照綜合分數排序。
+                ### ③ AI需求與權重分析
+                - 旅遊限制與特色：
+                - 各項指標權重說明（推薦度、交通、CP值、拍照、美食、雨天適合度）：
 
-                ### ④ AI淘汰原因
-                - 列出有哪些候選景點沒有被安排？
-                - 列出淘汰原因（例如：距離太遠、交通太久、性質重複、時間不足等）。
+                ### ④ AI景點評分（含詳細依據）
+                - 請現場動態列出被保留的候選景點，並針對每個景點提供包含以下格式的詳細評分與簡短理由（不可只給數字，每一項都要有原因）：
+                  景點名稱：[景點]
+                  - 交通：[分數]
+                    原因：
+                    - [理由1]
+                    - [理由2]
+                    - [理由3]
+                  - 拍照：[分數]
+                    原因：
+                    - [理由1]
+                    - [理由2]
+                    - [理由3]
+                  - CP值：[分數]
+                    原因：
+                    - [理由1]
+                    - [理由2]
+                    - [理由3]
+                  - 綜合分數：[分數]
 
-                ### ⑤ AI動線最佳化
-                - 解釋為何這樣安排：
-                - 如何減少交通時間：
-                - 如何避免折返：
-                - 如何控制預算：
+                ### ⑤ AI淘汰原因
+                - 說明有哪些候選景點被淘汰及其具體原因。
 
-                ### ⑥ 每日詳細行程
+                ### ⑥ AI動線最佳化
+                - 解釋為何這樣安排以減少交通時間、避免折返與控制預算。
+
+                ### ⑦ 每日詳細行程
                 (請依照 Day 1, Day 2... 逐日詳細列出：上午、午餐、下午、晚餐、晚上、交通、預估花費)
 
-                ### ⑦ 雨天備案
+                ### ⑧ 雨天備案
                 (針對戶外行程提供對應的室內雨天替代方案與說明)
 
-                ### ⑧ AI決策摘要
-                - 分析景點數量：
-                - 最後採用景點數量：
-                - AI推薦可信度（%）：
-                - 一句總結：
+                ### ⑨ AI可信度摘要
+                - AI可信度：[動態百分比]%
+                - 原因：
+                  ✓ [正面條件1]
+                  ✓ [正面條件2]
+                  ✓ [正面條件3]
+                  ✓ [正面條件4]
+                  ⚠ [風險或變數1]
+                  ⚠ [風險或變數2]
                 """
                 
                 response = client.models.generate_content(
@@ -116,17 +173,17 @@ if generate_btn:
                     contents=prompt,
                 )
                 
-                # 將結果暫存於 session_state 中，避免切換分頁時遺失
                 st.session_state["ai_response"] = response.text
                 st.session_state["generated"] = True
+                status_box.update(label="✅ AI 智慧推薦與決策中樞運算完成！", state="complete", expanded=False)
                 
             except Exception as e:
+                status_box.update(label="❌ 運算發生錯誤", state="error", expanded=True)
                 st.error(f"❌ 呼叫 AI 時發生錯誤：{e}")
 
 # ==================== 5. 呈現介面 (Tabs + Metrics + Expanders) ====================
 if st.session_state.get("generated", False):
     
-    # 頂部儀表板數據指標 (st.metric)
     col1, col2, col3, col4 = st.columns(4)
     with col1:
         st.metric(label="🤖 AI 模型核心", value="Gemini-3.5-Flash")
@@ -139,27 +196,24 @@ if st.session_state.get("generated", False):
         
     st.markdown("---")
     
-    # 三大核心分頁 (st.tabs)
-    tab_itinerary, tab_analysis, tab_decision = st.tabs(["📋 AI 行程總覽", "📊 AI 分析與權重", "⚙️ AI 決策與淘汰機制"])
+    tab_itinerary, tab_analysis, tab_decision = st.tabs(["📋 AI 行程總覽", "📊 AI 分析與權重", "⚙️ AI 決策與透明度日誌"])
     
     full_text = st.session_state["ai_response"]
     
-    # 簡單切割字串用來分發到不同分頁展示
     with tab_itinerary:
-        st.subheader(f"✨ 「{destination}」專屬智慧行程")
-        # 顯示⑥每日詳細行程與⑦雨天備案相關內容
+        st.subheader(f"✨ 「{destination}」動態生成專屬智慧行程")
         st.markdown(full_text)
 
     with tab_analysis:
-        st.subheader("📊 多維度權重分析與候選評分模型")
-        with st.expander("🔍 點擊展開：① AI 需求分析與 ② 權重計算過程", expanded=True):
-            st.info("系統透過使用者的旅遊類型與偏好，自動計算各項評分權重：")
+        st.subheader("📊 篩選流程、多維度權重與評分依據模型")
+        with st.expander("🔍 點擊展開：② 候選景點篩選流程與 ④ 景點評分詳細依據", expanded=True):
+            st.info("系統現場動態計算各景點之交通、拍照、CP值評分與詳細理由：")
             st.markdown(full_text)
 
     with tab_decision:
-        st.subheader("⚙️ 決策中樞：景點評分表、淘汰原因與動線最佳化")
-        with st.expander("📈 點擊展開：③ 候選景點評分表與 ④ 淘汰機制說明", expanded=True):
+        st.subheader("⚙️ 決策中樞：AI Decision Log 與可信度驗證")
+        with st.expander("📈 點擊展開：① AI Decision Log 與 ⑨ 可信度評估摘要", expanded=True):
             st.markdown(full_text)
 
 else:
-    st.info("👈 請在左側設定好旅遊需求與進階偏好，並點擊 **「🚀 啟動 AI 智慧推薦與排程引擎」**，讓系統為您產出完整的智慧旅遊決策報告！")
+    st.info("👈 請在左側輸入您想去的目的地與進階偏好，並點擊 **「🚀 啟動 AI 智慧推薦與排程引擎」**，讓系統即時為您現場運算具備透明決策日誌的推薦報告！")
